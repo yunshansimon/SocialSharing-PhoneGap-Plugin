@@ -1,25 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
-        id="cordova-plugin-x-socialsharing"
-        version="5.0.8-dev">
+        id="cordova-plugin-x-socialsharing-chinese"
+        version="1.0.0.1">
 
-  <name>SocialSharing</name>
+  <name>SocialSharing For Chinese</name>
 
   <description>
     Share text, images (and other files), or a link via the native sharing widget of your device.
     Android is fully supported, as well as iOS 6 and up. WP8 has somewhat limited support.
+    Add share via wechat and qq.
   </description>
 
-  <author>Eddy Verbruggen</author>
+  <author>Eddy Verbruggen, yunshansimon</author>
 
   <license>MIT</license>
 
-  <keywords>Social, Share, Twitter, Facebook, Email, SMS, WhatsApp, Tumblr, Pocket, LinkedIn</keywords>
+  <keywords>Social, Share, Twitter, Facebook, Email, SMS, WhatsApp, Tumblr, Pocket, LinkedIn, Wechat, QQ, weixin</keywords>
 
-  <repo>https://github.com/EddyVerbruggen/SocialSharing-PhoneGap-Plugin.git</repo>
+  <repo>https://github.com/yunshansimon/SocialSharing-PhoneGap-Plugin.git</repo>
 
-  <issue>https://github.com/EddyVerbruggen/SocialSharing-PhoneGap-Plugin/issues</issue>
+  <issue>https://github.com/yunshansimon/SocialSharing-PhoneGap-Plugin/issues</issue>
+
+  <preference name="WECHATAPPID" value="wxba84c1a4c6c8fee0"/>
+  <preference name="QQAPPID" value="1105039864"/>
 
   <engines>
     <engine name="cordova" version=">=3.0.0"/>
@@ -31,19 +35,86 @@
 
   <!-- ios -->
   <platform name="ios">
-
     <config-file target="config.xml" parent="/*">
       <feature name="SocialSharing">
         <param name="ios-package" value="SocialSharing"/>
         <param name="onload" value="true" />
       </feature>
+      <preference name="WECHATAPPID" value="$WECHATAPPID"/>
+      <preference name="QQAPPID" value="$QQAPPID"/>
+    </config-file>
+
+    <config-file target="*-Info.plist" parent="LSApplicationQueriesSchemes">
+      <array>
+        <string>weixin</string>
+        <string>wechat</string>
+        <string>mqq</string>
+      </array>
+    </config-file>
+
+    <config-file target="*-Info.plist" parent="NSAppTransportSecurity">
+      <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+      </dict>
+    </config-file>
+
+
+    <config-file target="*-Info.plist" parent="CFBundleURLTypes">
+      <array>
+        <dict>
+          <key>CFBundleURLName</key>
+          <string>weixin</string>
+          <key>CFBundleURLSchemes</key>
+          <array>
+            <string>$WECHATAPPID</string>
+          </array>
+        </dict>
+        <dict>
+          <key>CFBundleURLName</key>
+          <string>tencent</string>
+          <key>CFBundleURLSchemes</key>
+          <array>
+            <string>tencent$WECHATAPPID</string>
+          </array>
+        </dict>
+      </array>
     </config-file>
 
     <header-file src="src/ios/SocialSharing.h"/>
     <source-file src="src/ios/SocialSharing.m"/>
 
+    <!--Wechat files -->
+    <header-file src="src/ios/wechat/WXApi.h" />
+    <header-file src="src/ios/wechat/WXApiObject.h" />
+    <source-file src="src/ios/wechat/libWeChatSDK.a" framework="true" />
+    <header-file src="src/ios/wechat/WechatAuthSDK.h" />
+    <header-file src="src/ios/wechat/WXApiManager.h"/>
+    <source-file src="src/ios/wechat/WXApiManager.m"/>
+    <header-file src="src/ios/wechat/WXApiRequestHandler.h"/>
+    <source-file src="src/ios/wechat/WXApiRequestHandler.m"/>
+    <header-file src="src/ios/wechat/WXApiResponseHandler.h"/>
+    <source-file src="src/ios/wechat/WXApiResponseHandler.m"/>
+    <header-file src="src/ios/wechat/WXMediaMessage+messageConstruct.h"/>
+    <source-file src="src/ios/wechat/WXMediaMessage+messageConstruct.m"/>
+    <header-file src="src/ios/wechat/GetMessageFromWXResp+responseWithTextOrMediaMessage.h"/>
+    <source-file src="src/ios/wechat/GetMessageFromWXResp+responseWithTextOrMediaMessage.m"/>
+    <header-file src="src/ios/wechat/SendMessageToWXReq+requestWithTextOrMediaMessage.h"/>
+    <source-file src="src/ios/wechat/SendMessageToWXReq+requestWithTextOrMediaMessage.m"/>
+
+    <!-- QQ files-->
+    <source-file src="src/ios/qq/TencentOpenAPI.framework" framework="true" />
+    <source-file src="src/ios/qq/TencentOpenApi_IOS_Bundle.bundle" framework="true" />
+
     <framework src="Social.framework" weak="true" />
     <framework src="MessageUI.framework" weak="true" />
+    <framework src="libz.dylib" />
+    <framework src="libsqlite3.0.dylib" />
+    <framework src="CoreTelephony.framework" />
+    <framework src="SystemConfiguration.framework" />
+    <framework src="Security.framework" />
+    <framework src="libstdc++.6.dylib" />
+    <framework src="libiconv.dylib" />
   </platform>
 
   <!-- android -->
@@ -53,13 +124,23 @@
       <feature name="SocialSharing">
         <param name="android-package" value="nl.xservices.plugins.SocialSharing" />
       </feature>
+      <preference name="WECHATAPPID" value="$WECHATAPPID"/>
+      <preference name="QQAPPID" value="$QQAPPID"/>
     </config-file>
 
     <config-file target="AndroidManifest.xml" parent="/*">
       <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+      <uses-permission android:name="android.permission.INTERNET"/>
+      <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+      <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+      <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+      <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     </config-file>
 
     <source-file src="src/android/nl/xservices/plugins/SocialSharing.java" target-dir="src/nl/xservices/plugins"/>
+    <source-file src="src/android/nl/xservices/plugins/TencentMMReceiver.java" target-dir="src/nl/xservices/plugins"/>
+    <source-file src="src/android/tencent/libammsdk.jar" target-dir="src/tencent"/>
+    <source-file src="src/android/tencent/open_sdk_r5509_lite.jar" target-dir="src/tencent"/>
   </platform>
 
   <!-- wp8 -->

@@ -1,7 +1,10 @@
 #import <Cordova/CDV.h>
 #import <MessageUI/MFMailComposeViewController.h>
+#import "WXApiManager.h"
+#import "WXApiRequestHandler.h"
+#import <TencentOpenAPI/QQApiInterface.h>
 
-@interface SocialSharing : CDVPlugin <UIPopoverControllerDelegate, MFMailComposeViewControllerDelegate, UIDocumentInteractionControllerDelegate>
+@interface SocialSharing : CDVPlugin <UIPopoverControllerDelegate, MFMailComposeViewControllerDelegate, UIDocumentInteractionControllerDelegate,WXApiManagerDelegate>
 
 @property (nonatomic, strong) MFMailComposeViewController *globalMailComposer;
 @property (retain) UIDocumentInteractionController * documentInteractionController;
@@ -21,6 +24,8 @@
 - (void)shareViaSMS:(CDVInvokedUrlCommand*)command;
 - (void)shareViaEmail:(CDVInvokedUrlCommand*)command;
 - (void)shareViaInstagram:(CDVInvokedUrlCommand*)command;
+- (void)shareViaQq:(CDVInvokedUrlCommand*)command;
+- (void)shareViaWechat:(CDVInvokedUrlCommand*)command;
 
 - (void)saveToPhotoAlbum:(CDVInvokedUrlCommand*)command;
 

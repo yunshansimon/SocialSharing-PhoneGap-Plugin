@@ -14,6 +14,11 @@
 - (void)pluginInitialize {
   if ([self isEmailAvailable]) {
     [self cycleTheGlobalMailComposer];
+      NSString* appId = [[self.commandDelegate settings] objectForKey:@"wechatappid"];
+      if(appId){
+          [WXApiManager sharedManager].delegate=self;
+          [WXApi registerApp: appId];
+      }
   }
 }
 
@@ -715,6 +720,177 @@
     CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
     [self.commandDelegate sendPluginResult:result callbackId: self.command.callbackId];
   }
+}
+
+- (void)shareViaWechat:(CDVInvokedUrlCommand *)command{
+    
+    // on iOS9 canShareVia('whatsapp'..) will only work if whatsapp:// is whitelisted.
+    // If it's not, this method will ask permission to the user on iOS9 for opening the app,
+    // which is of course better than WhatsApp sharing not working at all because you forgot to whitelist it.
+    // Tradeoff: on iOS9 this method will always return true, so make sure to whitelist it and call canShareVia('whatsapp'..)
+    if (!IsAtLeastiOSVersion(@"9.0")) {
+        if (![self canShareViaWechat]) {
+            CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"未安装微信"];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+            return;
+        }
+    }
+    NSString *sense     = [command.arguments objectAtIndex:4]!= (id)[NSNull null]?[command.arguments objectAtIndex:4]:@"session";
+    NSString *message   = [command.arguments objectAtIndex:0]!= (id)[NSNull null]?[command.arguments objectAtIndex:0]:@"";
+    NSString *subject   = [command.arguments objectAtIndex:1]!= (id)[NSNull null]?[command.arguments objectAtIndex:1]:@"";
+    NSArray  *filenames = [command.arguments objectAtIndex:2];
+    enum WXScene mScene;
+    if ([sense  isEqual: @"favorite"]) {
+        mScene=WXSceneFavorite;
+    }else if ([sense isEqual:@"timeline"]){
+        mScene=WXSceneTimeline;
+    }else{
+        mScene=WXSceneSession;
+    }
+    
+    // only use the first image (for now.. maybe we can share in a loop?)
+    
+    if ([command.arguments objectAtIndex:3] != (id)[NSNull null] && filenames != (id)[NSNull null] && [filenames count]>0) {
+        NSString *urlString = [command.arguments objectAtIndex:3];
+        UIImage* image = nil;
+        for (NSString* filename in filenames) {
+            image = [self getImage:filename];
+            break;
+        }
+        
+        if([WXApiRequestHandler sendLinkURL:urlString TagName:nil Title:subject Description:message ThumbImage:image InScene:mScene]){
+            CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        }else{
+            CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Error when Sharing"];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        }
+        
+    }else if (filenames != (id)[NSNull null] && [filenames count]>0){
+        UIImage* image = nil;
+        for (NSString* filename in filenames) {
+            image = [self getImage:filename];
+            break;
+        }
+        if (image != nil) {
+            if ([WXApiRequestHandler sendImageData:UIImageJPEGRepresentation(image,0.8) TagName:nil MessageExt:message Action:nil ThumbImage:image InScene:mScene]) {
+                CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+            }else{
+                CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Error when Sharing"];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+            }
+        }else{
+            CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Error when Sharing"];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        }
+    }else if (![message isEqual:@""]){
+        if([WXApiRequestHandler sendText:message InScene:mScene]){
+            CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        }else{
+            CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Error when Sharing"];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        }
+    }else{
+        CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Arguments error"];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    }
+    
+}
+
+- (bool)canShareViaWechat {
+    
+    return [WXApi isWXAppInstalled]; // requires whitelisting on iOS9
+}
+
+- (bool)canShareViaQq {
+    return [QQApiInterface isQQInstalled]; // requires whitelisting on iOS9
+}
+
+- (void)shareViaQq:(CDVInvokedUrlCommand *)command{
+    
+    // on iOS9 canShareVia('whatsapp'..) will only work if whatsapp:// is whitelisted.
+    // If it's not, this method will ask permission to the user on iOS9 for opening the app,
+    // which is of course better than WhatsApp sharing not working at all because you forgot to whitelist it.
+    // Tradeoff: on iOS9 this method will always return true, so make sure to whitelist it and call canShareVia('whatsapp'..)
+    if (!IsAtLeastiOSVersion(@"9.0")) {
+        if (![self canShareViaQq]) {
+            CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"未安装微信"];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+            return;
+        }
+    }
+    NSString *message   = [command.arguments objectAtIndex:0]!= (id)[NSNull null]?[command.arguments objectAtIndex:0]:@"";
+    NSString *subject   = [command.arguments objectAtIndex:1]!= (id)[NSNull null]?[command.arguments objectAtIndex:1]:@"";
+    NSArray  *filenames = [command.arguments objectAtIndex:2];
+    bool toZone=[command.arguments objectAtIndex:4]!= (id)[NSNull null]? ![[command.arguments objectAtIndex:3] isEqualToString:@""]:false;
+    // only use the first image (for now.. maybe we can share in a loop?)
+    
+    if ([command.arguments objectAtIndex:3] != (id)[NSNull null] && filenames != (id)[NSNull null] && [filenames count]>0) {
+        NSString *urlString = [command.arguments objectAtIndex:3];
+        NSString *image = nil;
+        for (NSString* filename in filenames) {
+            image = filename;
+            break;
+        }
+        
+        QQApiNewsObject *newsObj = [QQApiNewsObject
+                                    objectWithURL :[NSURL URLWithString:urlString]
+                                    title: subject
+                                    description :message
+                                    previewImageURL:[NSURL URLWithString:image]];
+        
+        SendMessageToQQReq *req = [SendMessageToQQReq reqWithContent:newsObj];
+        
+        QQApiSendResultCode sent = toZone?[QQApiInterface SendReqToQZone:req]:[QQApiInterface sendReq:req];
+        if (sent == EQQAPISENDSUCESS) {
+            CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        }else{
+            CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Error when Sharing"];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        }
+        
+    }else if (filenames != (id)[NSNull null] && [filenames count]>0){
+        UIImage* image = nil;
+        for (NSString* filename in filenames) {
+            image = [self getImage:filename];
+            break;
+        }
+        
+        QQApiImageObject *imgObj = [QQApiImageObject objectWithData:UIImageJPEGRepresentation(image,0.8)
+                                                   previewImageData:UIImageJPEGRepresentation(image,0.4)
+                                                              title:subject
+                                                       description :message];
+        
+        SendMessageToQQReq *req = [SendMessageToQQReq reqWithContent:imgObj];
+        
+        QQApiSendResultCode sent = toZone?[QQApiInterface SendReqToQZone:req]:[QQApiInterface sendReq:req];
+        if (sent == EQQAPISENDSUCESS) {
+            CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        }else{
+            CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Error when Sharing"];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        }
+
+    }else if (![message isEqual:@""]){
+        QQApiTextObject *txtObj = [QQApiTextObject objectWithText:message];
+        SendMessageToQQReq *req = [SendMessageToQQReq reqWithContent:txtObj];
+        QQApiSendResultCode sent = [QQApiInterface sendReq:req];
+        if (sent == EQQAPISENDSUCESS) {
+            CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        }else{
+            CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Error when Sharing"];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        }
+    }else{
+        CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Arguments error"];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    }
+    
 }
 
 @end

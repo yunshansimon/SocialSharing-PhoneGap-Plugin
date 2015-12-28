@@ -6,18 +6,39 @@ import android.content.*;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Environment;
 import android.text.Html;
 import android.util.Base64;
 import android.view.Gravity;
 import android.widget.Toast;
 
+import com.iwxiao.client.R;
+import com.tencent.connect.share.QQShare;
+import com.tencent.mm.sdk.constants.ConstantsAPI;
+import com.tencent.mm.sdk.modelbase.BaseReq;
+import com.tencent.mm.sdk.modelbase.BaseResp;
+import com.tencent.mm.sdk.modelmsg.SendMessageToWX;
+import com.tencent.mm.sdk.modelmsg.WXImageObject;
+import com.tencent.mm.sdk.modelmsg.WXMediaMessage;
+import com.tencent.mm.sdk.modelmsg.WXTextObject;
+import com.tencent.mm.sdk.modelmsg.WXWebpageObject;
+import com.tencent.mm.sdk.openapi.IWXAPI;
+import com.tencent.mm.sdk.openapi.WXAPIFactory;
+import com.tencent.tauth.Tencent;
+import com.tencent.tauth.IUiListener;
+import com.tencent.tauth.UiError;
+
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
+import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.PluginResult;
+import org.apache.cordova.file.Filesystem;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -26,6 +47,7 @@ import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -47,6 +69,19 @@ public class SocialSharing extends CordovaPlugin {
   private static final String ACTION_SHARE_VIA_SMS_EVENT = "shareViaSMS";
   private static final String ACTION_SHARE_VIA_EMAIL_EVENT = "shareViaEmail";
 
+  private static final String ACTION_SHARE_VIA_WECHAT_EVENT = "shareViaWechat";
+  private static final String ACTION_SHARE_VIA_QQ_EVENT = "shareViaQq";
+  private static final String WXAPPID_PROPERTY_KEY = "wechatappid";
+  private static final String QQAPPID_PROPERTY_KEY = "qqappid";
+  private static String QQ_APP_ID;
+  private static String WECHAT_APP_ID;
+
+  private static final String WECHAT_SHARE_FAVORITE="favorite";
+  private static final String WECHAT_SHARE_SESSION="session";
+  private static final String WECHAT_SHARE_TIMELINE="timeline";
+  private static final String WECHAT_ACTION_PREFIX="iwx_share_";
+  private static final int THUMB_SIZE = 150;
+
   private static final int ACTIVITY_CODE_SEND = 1;
   private static final int ACTIVITY_CODE_SENDVIAEMAIL = 2;
   private static final int ACTIVITY_CODE_SENDVIAWHATSAPP = 3;
@@ -55,13 +90,23 @@ public class SocialSharing extends CordovaPlugin {
 
   private String pasteMessage;
 
+  private Tencent mTencent;
+
   private abstract class SocialSharingRunnable implements Runnable {
     public CallbackContext callbackContext;
     SocialSharingRunnable(CallbackContext cb) {
       this.callbackContext = cb;
     }
   }
+  @Override
+  public void initialize(CordovaInterface cordova, CordovaWebView webView) {
+    super.initialize(cordova, webView);
+    QQ_APP_ID=preferences.getString(WXAPPID_PROPERTY_KEY,"");
+    WECHAT_APP_ID=preferences.getString(QQAPPID_PROPERTY_KEY,"");
+    mTencent = Tencent.createInstance(QQ_APP_ID, cordova.getActivity().getApplicationContext());
 
+    // your init code here
+  }
   @Override
   public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
     this._callbackContext = callbackContext; // only used for onActivityResult
@@ -105,6 +150,10 @@ public class SocialSharing extends CordovaPlugin {
       return invokeSMSIntent(callbackContext, args.getJSONObject(0), args.getString(1));
     } else if (ACTION_SHARE_VIA_EMAIL_EVENT.equals(action)) {
       return invokeEmailIntent(callbackContext, args.getString(0), args.getString(1), args.getJSONArray(2), args.isNull(3) ? null : args.getJSONArray(3), args.isNull(4) ? null : args.getJSONArray(4), args.isNull(5) ? null : args.getJSONArray(5));
+    } else if(ACTION_SHARE_VIA_QQ_EVENT.equals(action)){
+      return shareViaQq(callbackContext,args.getString(0), args.getString(1), args.isNull(2)?null:args.getJSONArray(2), args.isNull(3)?null:args.getString(3),args.isNull(4)?null:args.getString(4));
+    } else if(ACTION_SHARE_VIA_WECHAT_EVENT.equals(action)){
+      return shareViaWechat(callbackContext,args.getString(0), args.getString(1), args.isNull(2)?null:args.getJSONArray(2), args.isNull(3)?null:args.getString(3),args.isNull(4)?null:args.getString(4));
     } else {
       callbackContext.error("socialSharing." + action + " is not a supported function. Did you mean '" + ACTION_SHARE_EVENT + "'?");
       return false;
@@ -259,7 +308,7 @@ public class SocialSharing extends CordovaPlugin {
             } else {
               sendIntent.addCategory(Intent.CATEGORY_LAUNCHER);
               sendIntent.setComponent(new ComponentName(activity.applicationInfo.packageName,
-                  passedActivityName != null ? passedActivityName : activity.name));
+                      passedActivityName != null ? passedActivityName : activity.name));
               mycordova.startActivityForResult(plugin, sendIntent, 0);
 
               if (pasteMessage != null) {
@@ -590,5 +639,188 @@ public class SocialSharing extends CordovaPlugin {
 
   public static String sanitizeFilename(String name) {
     return name.replaceAll("[:\\\\/*?|<> ]", "_");
+  }
+
+  private boolean shareViaQq(final CallbackContext callbackContext,final String message, final String subject, final JSONArray files, final String url ,final String toZone){
+    cordova.getActivity().runOnUiThread(new Runnable() {
+      public void run() {
+        if (mTencent == null) {
+          callbackContext.error("init error");
+          return;
+        }
+        final Bundle params = new Bundle();
+        try {
+          params.putInt(QQShare.SHARE_TO_QQ_KEY_TYPE, QQShare.SHARE_TO_QQ_TYPE_DEFAULT);
+          params.putString(QQShare.SHARE_TO_QQ_TITLE, subject);
+          params.putString(QQShare.SHARE_TO_QQ_SUMMARY, message);
+          params.putString(QQShare.SHARE_TO_QQ_TARGET_URL, url);
+          params.putString(QQShare.SHARE_TO_QQ_IMAGE_URL, (files.length() > 0 && !"".equals(files.getString(0)) ? files.getString(0) : ""));
+          params.putString(QQShare.SHARE_TO_QQ_APP_NAME, cordova.getActivity().getString(R.string.app_name));
+          if (notEmpty(toZone)) {
+            params.putInt(QQShare.SHARE_TO_QQ_EXT_INT, QQShare.SHARE_TO_QQ_FLAG_QZONE_AUTO_OPEN);
+          }
+          mTencent.shareToQQ(cordova.getActivity(), params, new IUiListener() {
+            @Override
+            public void onCancel() {
+              callbackContext.error("分享取消");
+            }
+
+            @Override
+            public void onComplete(Object response) {
+              // TODO Auto-generated method stub
+              callbackContext.success();
+            }
+
+            @Override
+            public void onError(UiError e) {
+              // TODO Auto-generated method stub
+              //Util.toastMessage(QQShareActivity.this, "onError: " + e.errorMessage, "e");
+              callbackContext.error(e.errorMessage);
+            }
+          });
+        } catch (Exception e) {
+          callbackContext.error(e.getMessage());
+        }
+      }
+    });
+    return true;
+  }
+
+  private boolean shareViaWechat(final CallbackContext callbackContext,final String message, final String subject, final JSONArray files, final String url,final String scene){
+    cordova.getThreadPool().execute(new Runnable() {
+      public void run() {
+        final IWXAPI mIWXAPI = WXAPIFactory.createWXAPI(webView.getContext(), WECHAT_APP_ID);
+        if (mIWXAPI.isWXAppInstalled() == false) {
+          callbackContext.error("No wechat found!");
+          return;
+        }
+        SendMessageToWX.Req mReq = new SendMessageToWX.Req();
+        if (WECHAT_SHARE_FAVORITE.equals(scene)) {
+          mReq.scene = SendMessageToWX.Req.WXSceneFavorite;
+        } else if (WECHAT_SHARE_TIMELINE.equals(scene)) {
+          mReq.scene = SendMessageToWX.Req.WXSceneTimeline;
+        } else {
+          mReq.scene = SendMessageToWX.Req.WXSceneSession;
+        }
+        WXMediaMessage mMessage = new WXMediaMessage();
+        mMessage.sdkVer = 1;
+        if (subject.getBytes().length > 512) {
+          mMessage.title = new String(Arrays.copyOfRange(subject.getBytes(), 0, 511));
+        } else {
+          mMessage.title = subject;
+        }
+        if (message.getBytes().length > 1024) {
+          mMessage.description = new String(Arrays.copyOfRange(subject.getBytes(), 0, 1023));
+        } else {
+          mMessage.description = message;
+        }
+        final String messageAction = buildAction();
+        mMessage.messageAction = messageAction;
+        try {
+          if (notEmpty(url)) {
+            mMessage.mediaObject = new WXWebpageObject(url);
+            if (files.length() > 0 && !"".equals(files.getString(0))) {
+              Bitmap img=get_bitmap_from_url(files.getString(0));
+              if(img==null){
+                callbackContext.error("no img found!");
+                return;
+              }
+              mMessage.setThumbImage(Bitmap.createScaledBitmap(img,THUMB_SIZE,THUMB_SIZE,true));
+              img.recycle();
+            }
+          } else if (notEmpty(files.getString(0))) {
+            Bitmap img = get_bitmap_from_url(files.getString(0));
+            if(img==null){
+              callbackContext.error("no img found!");
+              return;
+            }
+            mMessage.mediaObject = new WXImageObject(img);
+            mMessage.setThumbImage(Bitmap.createScaledBitmap(img,THUMB_SIZE,THUMB_SIZE,true));
+            img.recycle();
+
+          } else if (notEmpty(message)) {
+            mMessage.mediaObject = new WXTextObject(message);
+          } else {
+            callbackContext.error("no message detect!");
+            return;
+          }
+          mReq.message=mMessage;
+          if(!mReq.checkArgs()){
+            callbackContext.error("message arguments error!");
+          }
+          IntentFilter intentFilter = new IntentFilter();
+          intentFilter.addAction(messageAction);
+          TencentMMReceiver mmReceiver = new TencentMMReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+              if (mIWXAPI.handleIntent(intent, this)) {
+                // intent handled as wechat request/response
+                return;
+              }
+            }
+
+            @Override
+            public void onReq(BaseReq baseReq) {
+
+            }
+
+            @Override
+            public void onResp(BaseResp baseResp) {
+              switch (baseResp.getType()) {
+                case ConstantsAPI.COMMAND_SENDAUTH:
+
+                  break;
+
+                case ConstantsAPI.COMMAND_SENDMESSAGE_TO_WX:
+                  // 处理微信主程序返回的SendMessageToWX.Resp
+                  if (baseResp.errCode == SendMessageToWX.Resp.ErrCode.ERR_OK) {
+                    callbackContext.success();
+                  } else {
+                    callbackContext.error(baseResp.errStr);
+                  }
+                  webView.getContext().unregisterReceiver(this);
+                  break;
+
+                default:
+                  break;
+              }
+            }
+          };
+          webView.getContext().registerReceiver(mmReceiver, intentFilter);
+          mIWXAPI.sendReq(mReq);
+        } catch (Exception e) {
+          callbackContext.error(e.getMessage());
+        }
+      }
+    });
+    return true;
+  }
+
+  private Bitmap get_bitmap_from_url(String imgUrl){
+    try{
+      byte[] imgBytes=DownLoadRemoteImg(imgUrl);
+      if(imgBytes==null){
+        return null;
+      }else{
+        final Bitmap bitmap=BitmapFactory.decodeByteArray(imgBytes,0,imgBytes.length);
+        return bitmap;
+      }
+    }catch (Exception e){
+      return null;
+    }
+  }
+
+  private byte[] DownLoadRemoteImg(String image) throws IOException {
+    // we're assuming an image, but this can be any filetype you like
+    if (image.startsWith("http") || image.startsWith("www/")) {
+        // filename optimisation taken from https://github.com/EddyVerbruggen/SocialSharing-PhoneGap-Plugin/pull/56
+        URLConnection connection = new URL(image).openConnection();
+      return getBytes(connection.getInputStream());
+    }
+    return null;
+  }
+
+  private String buildAction() {
+    return WECHAT_ACTION_PREFIX + String.valueOf(System.currentTimeMillis());
   }
 }

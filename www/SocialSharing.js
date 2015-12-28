@@ -88,6 +88,20 @@ SocialSharing.prototype.saveToPhotoAlbum = function (fileOrFileArray, successCal
   cordova.exec(successCallback, this._getErrorCallback(errorCallback, "saveToPhotoAlbum"), "SocialSharing", "saveToPhotoAlbum", [this._asArray(fileOrFileArray)]);
 };
 
+SocialSharing.prototype.shareViaQq = function (message, subject, fileOrFileArray, url, successCallback, errorCallback,toZone) {
+  cordova.exec(successCallback, this._getErrorCallback(errorCallback, "shareViaQq"), "SocialSharing", "shareViaQq", [message, subject, this._asArray(fileOrFileArray), url,toZone]);
+};
+
+SocialSharing.prototype.shareViaWechat = function (sense, message, subject, fileOrFileArray, url, successCallback, errorCallback) {
+  cordova.exec(successCallback, this._getErrorCallback(errorCallback, "shareViaWechat"), "SocialSharing", "shareViaWechat", [message, subject, this._asArray(fileOrFileArray), url,sense]);
+};
+
+SocialSharing.prototype.WECHAT_SENSE={
+  favorite:"favorite",
+  session:"session",
+  timeline:"timeline"
+};
+
 SocialSharing.prototype._asArray = function (param) {
   if (param == null) {
     param = [];
