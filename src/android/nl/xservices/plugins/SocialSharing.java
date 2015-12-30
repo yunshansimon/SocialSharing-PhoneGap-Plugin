@@ -101,8 +101,8 @@ public class SocialSharing extends CordovaPlugin {
   @Override
   public void initialize(CordovaInterface cordova, CordovaWebView webView) {
     super.initialize(cordova, webView);
-    QQ_APP_ID=preferences.getString(WXAPPID_PROPERTY_KEY,"");
-    WECHAT_APP_ID=preferences.getString(QQAPPID_PROPERTY_KEY,"");
+    QQ_APP_ID=preferences.getString(QQAPPID_PROPERTY_KEY,"");
+    WECHAT_APP_ID=preferences.getString(WXAPPID_PROPERTY_KEY,"");
     mTencent = Tencent.createInstance(QQ_APP_ID, cordova.getActivity().getApplicationContext());
 
     // your init code here
