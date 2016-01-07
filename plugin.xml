@@ -49,6 +49,7 @@
         <string>weixin</string>
         <string>wechat</string>
         <string>mqq</string>
+        <string>mqqopensdkapiV2</string>
       </array>
     </config-file>
 
