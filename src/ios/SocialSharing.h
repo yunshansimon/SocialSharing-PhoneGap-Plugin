@@ -4,6 +4,7 @@
 #import "WXApiRequestHandler.h"
 #import <TencentOpenAPI/QQApiInterface.h>
 #import <TencentOpenAPI/TencentOAuth.h>
+#import <TencentOpenAPI/TencentApiInterface.h>
 #import "WeiboSDK.h"
 
 @interface SocialSharing : CDVPlugin <UIPopoverControllerDelegate, MFMailComposeViewControllerDelegate, UIDocumentInteractionControllerDelegate,WXApiManagerDelegate,QQApiInterfaceDelegate,TencentSessionDelegate,WeiboSDKDelegate>

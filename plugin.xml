@@ -16,7 +16,7 @@
 
   <license>MIT</license>
 
-  <keywords>Social, Share, Twitter, Facebook, Email, SMS, WhatsApp, Tumblr, Pocket, LinkedIn, Wechat, QQ, weixin</keywords>
+  <keywords>Social, Share, Twitter, Facebook, Email, SMS, WhatsApp, Tumblr, Pocket, LinkedIn, Wechat, QQ, weixin, WeiBo</keywords>
 
   <repo>https://github.com/yunshansimon/SocialSharing-PhoneGap-Plugin.git</repo>
 
@@ -117,7 +117,7 @@
 
     <!-- QQ files-->
     <source-file src="src/ios/qq/TencentOpenAPI.framework" framework="true" />
-    <source-file src="src/ios/qq/TencentOpenApi_IOS_Bundle.bundle" />
+    <source-file src="src/ios/qq/TencentOpenApi_IOS_Bundle.bundle" framework="true"/>
 
     <!-- WEIBO files-->
     <header-file src="src/ios/libWeiboSDK/WBHttpRequest+WeiboGame.h"/>
@@ -132,7 +132,7 @@
     <header-file src="src/ios/libWeiboSDK/WeiboSDK.h"/>
     <header-file src="src/ios/libWeiboSDK/WeiboUser.h"/>
     <source-file src="src/ios/libWeiboSDK/libWeiboSDK.a" framework="true"/>
-    <source-file src="src/ios/libWeiboSDK/WeiboSDK.bundle"/>
+    <source-file src="src/ios/libWeiboSDK/WeiboSDK.bundle" framework="true"/>
     <framework src="QuartzCore.framework"/>
     <framework src="ImageIO.framework"/>
     <framework src="CoreText.framework"/>

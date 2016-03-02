@@ -19,17 +19,18 @@
   if ([self isEmailAvailable]) {
     [self cycleTheGlobalMailComposer];
   }
-    NSString* appId = [[self.commandDelegate settings] objectForKey:@"wechatappid"];
+    NSDictionary *setting=[self.commandDelegate settings];
+    NSString* appId = [setting objectForKey:@"wechatappid"];
     if(appId){
         [WXApiManager sharedManager].delegate=self;
         [WXApi registerApp: appId];
     }
-    appId=[[self.commandDelegate settings] objectForKey:@"qqappid"];
+    appId=[setting objectForKey:@"qqappid"];
     if(appId){
         _tencent_auth = [[TencentOAuth alloc] initWithAppId:appId
                                                 andDelegate:self];
     }
-    appId=[[self.commandDelegate settings] objectForKey:@"weiboappid"];
+    appId=[setting objectForKey:@"weiboappid"];
     if(appId){
         [WeiboSDK enableDebugMode:YES];
         [WeiboSDK registerApp:appId];
@@ -39,11 +40,11 @@
 }
 
 - (void)handleOpenURL:(NSNotification *)notification{
-    NSString *url=[[NSString alloc] initWithContentsOfURL:notification.object encoding:NSUTF8StringEncoding error:nil];
-    if ([url containsString:@"com.weibo"]) {
-        [WeiboSDK handleOpenURL:notification.object delegate:self];
-    }else if([url containsString:@"tencent"]){
-        [QQApiInterface handleOpenURL:notification.object delegate:self];
+    NSURL *handleUrl=(NSURL *)notification.object;
+    if ([handleUrl.scheme containsString:@"wb"]) {
+        [WeiboSDK handleOpenURL:handleUrl delegate:self];
+    }else if([handleUrl.scheme containsString:@"tencent"]){
+        [QQApiInterface handleOpenURL:handleUrl delegate:self];
     }
     
 }
@@ -918,8 +919,9 @@
 }
 
 - (void) shareViaWeiBo:(CDVInvokedUrlCommand *)command{
-    NSString *weiboAppid=[[self.commandDelegate settings] objectForKey:@"weiboappid"];
-    NSString *weiboRedirectURI=[[self.commandDelegate settings] objectForKey:@"WEIBORedirectURI"];
+    NSDictionary *setting=[self.commandDelegate settings];
+    NSString *weiboAppid=[setting objectForKey:@"weiboappid"];
+    NSString *weiboRedirectURI=[setting objectForKey:@"weiboredirecturi"];
     NSString *message   = [command.arguments objectAtIndex:0]!= (id)[NSNull null]?[command.arguments objectAtIndex:0]:@"";
     NSString *subject   = [command.arguments objectAtIndex:1]!= (id)[NSNull null]?[command.arguments objectAtIndex:1]:@"";
     NSArray  *filenames = [command.arguments objectAtIndex:2];
@@ -936,6 +938,7 @@
         return;
     }
     if(!_weibo_access_token){
+        
         WBAuthorizeRequest *authorReq= [WBAuthorizeRequest request];
         authorReq.redirectURI=weiboRedirectURI;
         authorReq.shouldShowWebViewForAuthIfCannotSSO=true;
