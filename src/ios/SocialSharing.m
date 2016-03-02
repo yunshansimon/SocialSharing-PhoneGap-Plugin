@@ -940,6 +940,7 @@
     if(!_weibo_access_token){
         
         WBAuthorizeRequest *authorReq= [WBAuthorizeRequest request];
+        authorReq.scope=@"all";
         authorReq.redirectURI=weiboRedirectURI;
         authorReq.shouldShowWebViewForAuthIfCannotSSO=true;
         authorReq.userInfo=@{@"message":message,@"subject":subject,@"img_url":urlImage,@"url":share_url,@"callbackId":command.callbackId};

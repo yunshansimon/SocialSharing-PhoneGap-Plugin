@@ -172,6 +172,7 @@
       <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
       <uses-permission android:name="android.permission.READ_PHONE_STATE" />
       <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
       <activity android:launchMode="singleTask" android:name="com.tencent.tauth.AuthActivity" android:noHistory="true">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -182,12 +183,24 @@
         </activity>
         <activity android:configChanges="orientation|keyboardHidden" android:name="com.tencent.connect.common.AssistActivity" android:screenOrientation="behind" android:theme="@android:style/Theme.Translucent.NoTitleBar">
         </activity>
+
+      <activity android:name="com.sina.weibo.sdk.component.WeiboSdkBrowser" android:configChanges="keyboardHidden|orientation" android:windowSoftInputMode="adjustResize" android:exported="false" >
+      </activity>
     </config-file>
 
     <source-file src="src/android/nl/xservices/plugins/SocialSharing.java" target-dir="src/nl/xservices/plugins"/>
     <source-file src="src/android/nl/xservices/plugins/TencentMMReceiver.java" target-dir="src/nl/xservices/plugins"/>
     <source-file src="src/android/tencent/libammsdk.jar" target-dir="src/tencent"/>
     <source-file src="src/android/tencent/open_sdk_r5509_lite.jar" target-dir="src/tencent"/>
+    <source-file src="src/android/weibo/weibosdkcore_release.jar" target-dir="src/weibo"/>
+    <source-file src="src/android/weibo/arm64-v8a/libweibosdkcore.so" target-dir="src/weibo/arm64-v8a"/>
+    <source-file src="src/android/weibo/armeabi/libweibosdkcore.so" target-dir="src/weibo/armeabi"/>
+    <source-file src="src/android/weibo/armeabi-v7a/libweibosdkcore.so" target-dir="src/weibo/armeabi-v7a"/>
+    <source-file src="src/android/weibo/mips/libweibosdkcore.so" target-dir="src/weibo/mips"/>
+    <source-file src="src/android/weibo/mips64/libweibosdkcore.so" target-dir="src/weibo/mips64"/>
+    <source-file src="src/android/weibo/x86/libweibosdkcore.so" target-dir="src/weibo/x86"/>
+    <source-file src="src/android/weibo/x86_64/libweibosdkcore.so" target-dir="src/weibo/x86_64"/>
+
   </platform>
 
   <!-- wp8 -->
