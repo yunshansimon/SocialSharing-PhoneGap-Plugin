@@ -4,8 +4,9 @@
 #import "WXApiRequestHandler.h"
 #import <TencentOpenAPI/QQApiInterface.h>
 #import <TencentOpenAPI/TencentOAuth.h>
+#import "WeiboSDK.h"
 
-@interface SocialSharing : CDVPlugin <UIPopoverControllerDelegate, MFMailComposeViewControllerDelegate, UIDocumentInteractionControllerDelegate,WXApiManagerDelegate,QQApiInterfaceDelegate,TencentSessionDelegate>
+@interface SocialSharing : CDVPlugin <UIPopoverControllerDelegate, MFMailComposeViewControllerDelegate, UIDocumentInteractionControllerDelegate,WXApiManagerDelegate,QQApiInterfaceDelegate,TencentSessionDelegate,WeiboSDKDelegate>
 
 @property (nonatomic, strong) MFMailComposeViewController *globalMailComposer;
 @property (retain) UIDocumentInteractionController * documentInteractionController;
@@ -28,6 +29,7 @@
 - (void)shareViaInstagram:(CDVInvokedUrlCommand*)command;
 - (void)shareViaQq:(CDVInvokedUrlCommand*)command;
 - (void)shareViaWechat:(CDVInvokedUrlCommand*)command;
+- (void)shareViaWeiBo:(CDVInvokedUrlCommand*)command;
 
 - (void)saveToPhotoAlbum:(CDVInvokedUrlCommand*)command;
 - (void)onReq:(QQBaseReq *)req;

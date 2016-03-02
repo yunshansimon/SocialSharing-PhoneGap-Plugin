@@ -2,7 +2,7 @@
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
         id="cordova-plugin-x-socialsharing-chinese"
-        version="1.0.0.1">
+        version="1.0.1">
 
   <name>SocialSharing For Chinese</name>
 
@@ -22,8 +22,10 @@
 
   <issue>https://github.com/yunshansimon/SocialSharing-PhoneGap-Plugin/issues</issue>
 
-  <preference name="WECHATAPPID" value="wxba84c1a4c6c8fee0"/>
-  <preference name="QQAPPID" value="1105039864"/>
+  <preference name="WECHATAPPID" default="wxba84c1a4c6c8fee0"/>
+  <preference name="QQAPPID" default="1105039864"/>
+  <preference name="WEIBOAPPID" default="4282630408"/>
+  <preference name="WEIBORedirectURI" default="https://api.weibo.com/oauth2/default.html"/>
 
   <engines>
     <engine name="cordova" version=">=3.0.0"/>
@@ -42,6 +44,8 @@
       </feature>
       <preference name="WECHATAPPID" value="$WECHATAPPID"/>
       <preference name="QQAPPID" value="$QQAPPID"/>
+      <preference name="WEIBOAPPID" value="$WEIBOAPPID"/>
+      <preference name="WEIBORedirectURI" value="$WEIBORedirectURI"/>
     </config-file>
 
     <config-file target="*-Info.plist" parent="LSApplicationQueriesSchemes">
@@ -79,6 +83,14 @@
             <string>tencent$WECHATAPPID</string>
           </array>
         </dict>
+        <dict>
+          <key>CFBundleURLName</key>
+          <string>com.weibo</string>
+          <key>CFBundleURLSchemes</key>
+          <array>
+            <string>wb$WEIBOAPPID</string>
+          </array>
+        </dict>
       </array>
     </config-file>
 
@@ -105,7 +117,28 @@
 
     <!-- QQ files-->
     <source-file src="src/ios/qq/TencentOpenAPI.framework" framework="true" />
-    <source-file src="src/ios/qq/TencentOpenApi_IOS_Bundle.bundle" framework="true" />
+    <source-file src="src/ios/qq/TencentOpenApi_IOS_Bundle.bundle" />
+
+    <!-- WEIBO files-->
+    <header-file src="src/ios/libWeiboSDK/WBHttpRequest+WeiboGame.h"/>
+    <header-file src="src/ios/libWeiboSDK/WBHttpRequest+WeiboShare.h"/>
+    <header-file src="src/ios/libWeiboSDK/WBHttpRequest+WeiboToken.h"/>
+    <header-file src="src/ios/libWeiboSDK/WBHttpRequest+WeiboUser.h"/>
+    <header-file src="src/ios/libWeiboSDK/WBHttpRequest.h"/>
+    <header-file src="src/ios/libWeiboSDK/WBSDKBasicButton.h"/>
+    <header-file src="src/ios/libWeiboSDK/WBSDKCommentButton.h"/>
+    <header-file src="src/ios/libWeiboSDK/WBSDKRelationshipButton.h"/>
+    <header-file src="src/ios/libWeiboSDK/WeiboSDK+Statistics.h"/>
+    <header-file src="src/ios/libWeiboSDK/WeiboSDK.h"/>
+    <header-file src="src/ios/libWeiboSDK/WeiboUser.h"/>
+    <source-file src="src/ios/libWeiboSDK/libWeiboSDK.a" framework="true"/>
+    <source-file src="src/ios/libWeiboSDK/WeiboSDK.bundle"/>
+    <framework src="QuartzCore.framework"/>
+    <framework src="ImageIO.framework"/>
+    <framework src="CoreText.framework"/>
+    <framework src="UIKit.framework"/>
+    <framework src="Foundation.framework"/>
+    <framework src="CoreGraphics.framework"/>
 
     <framework src="Social.framework" weak="true" />
     <framework src="MessageUI.framework" weak="true" />
@@ -116,6 +149,7 @@
     <framework src="Security.framework" />
     <framework src="libstdc++.6.dylib" />
     <framework src="libiconv.dylib" />
+
   </platform>
 
   <!-- android -->
@@ -127,6 +161,8 @@
       </feature>
       <preference name="WECHATAPPID" value="$WECHATAPPID"/>
       <preference name="QQAPPID" value="$QQAPPID"/>
+      <preference name="WEIBOAPPID" value="$WEIBOAPPID"/>
+      <preference name="WEIBORedirectURI" value="$WEIBORedirectURI"/>
     </config-file>
 
     <config-file target="AndroidManifest.xml" parent="/*">

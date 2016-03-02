@@ -102,6 +102,10 @@ SocialSharing.prototype.WECHAT_SENSE={
   timeline:"timeline"
 };
 
+SocialSharing.prototype.shareViaWeiBo=function (message, subject, fileOrFileArray, url, successCallback, errorCallback){
+  cordova.exec(successCallback, this._getErrorCallback(errorCallback, "shareViaWeiBo"), "SocialSharing", "shareViaWeiBo", [message, subject, this._asArray(fileOrFileArray), url]);
+};
+
 SocialSharing.prototype._asArray = function (param) {
   if (param == null) {
     param = [];
