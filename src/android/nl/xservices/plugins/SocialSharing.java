@@ -13,11 +13,28 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.text.Html;
+import android.text.TextUtils;
 import android.util.Base64;
+import android.util.Log;
 import android.view.Gravity;
 import android.widget.Toast;
 
 import com.iwxiao.client.R;
+import com.sina.weibo.sdk.api.ImageObject;
+import com.sina.weibo.sdk.api.TextObject;
+import com.sina.weibo.sdk.api.WebpageObject;
+import com.sina.weibo.sdk.api.WeiboMessage;
+import com.sina.weibo.sdk.api.WeiboMultiMessage;
+import com.sina.weibo.sdk.api.share.BaseResponse;
+import com.sina.weibo.sdk.api.share.IWeiboShareAPI;
+import com.sina.weibo.sdk.api.share.SendMessageToWeiboRequest;
+import com.sina.weibo.sdk.api.share.WeiboShareSDK;
+import com.sina.weibo.sdk.auth.AuthInfo;
+import com.sina.weibo.sdk.auth.Oauth2AccessToken;
+import com.sina.weibo.sdk.auth.WeiboAuthListener;
+import com.sina.weibo.sdk.auth.sso.SsoHandler;
+import com.sina.weibo.sdk.constant.WBConstants;
+import com.sina.weibo.sdk.exception.WeiboException;
 import com.tencent.connect.share.QQShare;
 import com.tencent.mm.sdk.constants.ConstantsAPI;
 import com.tencent.mm.sdk.modelbase.BaseReq;
@@ -54,7 +71,8 @@ import java.util.TimerTask;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class SocialSharing extends CordovaPlugin {
+
+public class SocialSharing extends CordovaPlugin{
 
   private static final String ACTION_AVAILABLE_EVENT = "available";
   private static final String ACTION_SHARE_EVENT = "share";
@@ -73,8 +91,13 @@ public class SocialSharing extends CordovaPlugin {
   private static final String ACTION_SHARE_VIA_QQ_EVENT = "shareViaQq";
   private static final String WXAPPID_PROPERTY_KEY = "wechatappid";
   private static final String QQAPPID_PROPERTY_KEY = "qqappid";
-  private static String QQ_APP_ID;
-  private static String WECHAT_APP_ID;
+  private static final String WEIBOAPPID_PROPERTY_KEY ="weiboappid";
+  private static final String WEIBO_URL_PROPERTY_KEY="WEIBORedirectURI";
+  private static String QQ_APP_ID="";
+  private static String WECHAT_APP_ID="";
+  private static String WEIBO_APP_ID="";
+  private static String WEIBO_URL="";
+  private static String weibo_token="";
 
   private static final String WECHAT_SHARE_FAVORITE="favorite";
   private static final String WECHAT_SHARE_SESSION="session";
@@ -91,6 +114,7 @@ public class SocialSharing extends CordovaPlugin {
   private String pasteMessage;
 
   private Tencent mTencent;
+  private IWeiboShareAPI weiboShareAPI;
 
   private abstract class SocialSharingRunnable implements Runnable {
     public CallbackContext callbackContext;
@@ -103,7 +127,13 @@ public class SocialSharing extends CordovaPlugin {
     super.initialize(cordova, webView);
     QQ_APP_ID=preferences.getString(QQAPPID_PROPERTY_KEY,"");
     WECHAT_APP_ID=preferences.getString(WXAPPID_PROPERTY_KEY,"");
-    mTencent = Tencent.createInstance(QQ_APP_ID, cordova.getActivity().getApplicationContext());
+    WEIBO_APP_ID=preferences.getString(WEIBOAPPID_PROPERTY_KEY,"");
+    WEIBO_URL=preferences.getString(WEIBO_URL_PROPERTY_KEY,"");
+    if(!QQ_APP_ID.isEmpty()) { mTencent = Tencent.createInstance(QQ_APP_ID, cordova.getActivity().getApplicationContext());}
+    if(!WECHAT_APP_ID.isEmpty()){
+      weiboShareAPI=WeiboShareSDK.createWeiboAPI(cordova.getActivity().getApplicationContext(),WEIBO_APP_ID);
+      weiboShareAPI.registerApp();
+    }
 
     // your init code here
   }
@@ -690,7 +720,7 @@ public class SocialSharing extends CordovaPlugin {
     cordova.getThreadPool().execute(new Runnable() {
       public void run() {
         final IWXAPI mIWXAPI = WXAPIFactory.createWXAPI(webView.getContext(), WECHAT_APP_ID);
-        if (mIWXAPI.isWXAppInstalled() == false) {
+        if (!mIWXAPI.isWXAppInstalled()) {
           callbackContext.error("No wechat found!");
           return;
         }
@@ -720,22 +750,22 @@ public class SocialSharing extends CordovaPlugin {
           if (notEmpty(url)) {
             mMessage.mediaObject = new WXWebpageObject(url);
             if (files.length() > 0 && !"".equals(files.getString(0))) {
-              Bitmap img=get_bitmap_from_url(files.getString(0));
-              if(img==null){
+              Bitmap img = get_bitmap_from_url(files.getString(0));
+              if (img == null) {
                 callbackContext.error("no img found!");
                 return;
               }
-              mMessage.setThumbImage(Bitmap.createScaledBitmap(img,THUMB_SIZE,THUMB_SIZE,true));
+              mMessage.setThumbImage(Bitmap.createScaledBitmap(img, THUMB_SIZE, THUMB_SIZE, true));
               img.recycle();
             }
           } else if (notEmpty(files.getString(0))) {
             Bitmap img = get_bitmap_from_url(files.getString(0));
-            if(img==null){
+            if (img == null) {
               callbackContext.error("no img found!");
               return;
             }
             mMessage.mediaObject = new WXImageObject(img);
-            mMessage.setThumbImage(Bitmap.createScaledBitmap(img,THUMB_SIZE,THUMB_SIZE,true));
+            mMessage.setThumbImage(Bitmap.createScaledBitmap(img, THUMB_SIZE, THUMB_SIZE, true));
             img.recycle();
 
           } else if (notEmpty(message)) {
@@ -744,8 +774,8 @@ public class SocialSharing extends CordovaPlugin {
             callbackContext.error("no message detect!");
             return;
           }
-          mReq.message=mMessage;
-          if(!mReq.checkArgs()){
+          mReq.message = mMessage;
+          if (!mReq.checkArgs()) {
             callbackContext.error("message arguments error!");
           }
           IntentFilter intentFilter = new IntentFilter();
@@ -820,7 +850,126 @@ public class SocialSharing extends CordovaPlugin {
     return null;
   }
 
+  private byte[] bitmapToThumb(Bitmap bitmap,int width,int height){
+    Bitmap target=Bitmap.createScaledBitmap(bitmap,width,height,true);
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    target.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+    return baos.toByteArray();
+  }
+
   private String buildAction() {
     return WECHAT_ACTION_PREFIX + String.valueOf(System.currentTimeMillis());
   }
+
+  private boolean shareViaWeiBo(final CallbackContext callbackContext,final String message, final String subject, final JSONArray files, final String url){
+    if(WEIBO_APP_ID.isEmpty() || weiboShareAPI == null) {
+      callbackContext.error("weibo app key is not set!");
+      return false;
+    }
+    if(!weiboShareAPI.isWeiboAppInstalled() || !weiboShareAPI.isWeiboAppSupportAPI()) {
+      callbackContext.error("Please update your weibo app.");
+      return false;
+    }
+    WeiboMessage wbMsg = new WeiboMessage();
+    if(!url.isEmpty()){
+      WebpageObject webObj=new WebpageObject();
+      webObj.actionUrl=url;
+      webObj.description=message;
+      webObj.title=subject;
+      webObj.identify=String.valueOf(System.currentTimeMillis());
+      if(files.length()>0){
+        try{
+          String img_url=files.getString(0);
+          Bitmap image=get_bitmap_from_url(img_url);
+          webObj.thumbData=bitmapToThumb(image,50,50);
+        }catch (Exception e){
+
+        }
+      }
+      wbMsg.mediaObject=webObj;
+    }else if(files.length()>0){
+      ImageObject imgObj= new ImageObject();
+      try{
+        String img_url=files.getString(0);
+        Bitmap image=get_bitmap_from_url(img_url);
+        imgObj.imageData=bitmapToThumb(image,image.getWidth(),image.getHeight());
+        imgObj.thumbData=bitmapToThumb(image,50,50);
+        imgObj.description=message;
+        imgObj.title=subject;
+        imgObj.identify=String.valueOf(System.currentTimeMillis());
+        wbMsg.mediaObject=imgObj;
+      }catch (Exception e){
+        TextObject txObj=new TextObject();
+        txObj.text=message;
+        txObj.identify=String.valueOf(System.currentTimeMillis());
+        wbMsg.mediaObject=txObj;
+      }
+    }else{
+      TextObject txObj=new TextObject();
+      txObj.text=message;
+      txObj.identify=String.valueOf(System.currentTimeMillis());
+      wbMsg.mediaObject=txObj;
+    }
+    SendMessageToWeiboRequest request=new SendMessageToWeiboRequest();
+    request.message=wbMsg;
+    request.transaction=String.valueOf(System.currentTimeMillis());
+    AuthInfo authInfo=new AuthInfo(cordova.getActivity().getApplicationContext(),WEIBO_APP_ID,WEIBO_URL,"all");
+    cordova.setActivityResultCallback(this);
+    WeiboReceiver mWeiboReceive = new WeiboReceiver(){
+      @Override
+      public void onReceive(Context context, Intent intent) {
+        if(weiboShareAPI !=null){
+          weiboShareAPI.handleWeiboResponse(intent,this);
+        }
+        cordova.getActivity().unregisterReceiver(this);
+      }
+
+      @Override
+      public void onResponse(BaseResponse baseResponse) {
+        switch (baseResponse.errCode) {
+          case WBConstants.ErrorCode.ERR_OK:
+            callbackContext.success();
+            break;
+          default:
+            callbackContext.error(baseResponse.errMsg);
+        }
+      }
+    };
+    IntentFilter intentFilter=new IntentFilter();
+    intentFilter.addAction("com.sina.weibo.sdk.action.ACTION_SDK_REQ_ACTIVITY");
+    cordova.getActivity().registerReceiver(mWeiboReceive,intentFilter);
+    if(!weiboShareAPI.sendRequest(cordova.getActivity(),request,authInfo,weibo_token,new AuthListener())){
+      callbackContext.error("error when sending request to weibo app");
+    }
+    return true;
+  }
+
+  class AuthListener implements WeiboAuthListener {
+
+    @Override
+    public void onComplete(Bundle values) {
+      // 从 Bundle 中解析 Token
+      Oauth2AccessToken mAccessToken = Oauth2AccessToken.parseAccessToken(values);
+      //从这里获取用户输入的 电话号码信息
+      String  phoneNum =  mAccessToken.getPhoneNum();
+      if (mAccessToken.isSessionValid()) {
+        // 显示 Token
+        weibo_token=mAccessToken.getToken();
+      } else {
+        _callbackContext.error("No access allowed");
+      }
+    }
+
+    @Override
+    public void onCancel() {
+      Log.d("SocailSharingViaWeibo", "sharing is canceled");
+    }
+
+    @Override
+    public void onWeiboException(WeiboException e) {
+      Log.d("SocailSharingViaWeibo",e.getMessage());
+    }
+  }
+
+
 }

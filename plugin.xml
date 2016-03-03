@@ -172,18 +172,19 @@
       <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
       <uses-permission android:name="android.permission.READ_PHONE_STATE" />
       <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    </config-file>
 
+    <config-file target="AndroidManifest.xml" parent="/manifest/application">
       <activity android:launchMode="singleTask" android:name="com.tencent.tauth.AuthActivity" android:noHistory="true">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="tencent$QQAPPID" />
-            </intent-filter>
-        </activity>
-        <activity android:configChanges="orientation|keyboardHidden" android:name="com.tencent.connect.common.AssistActivity" android:screenOrientation="behind" android:theme="@android:style/Theme.Translucent.NoTitleBar">
-        </activity>
-
+        <intent-filter>
+          <action android:name="android.intent.action.VIEW" />
+          <category android:name="android.intent.category.DEFAULT" />
+          <category android:name="android.intent.category.BROWSABLE" />
+          <data android:scheme="tencent$QQAPPID" />
+        </intent-filter>
+      </activity>
+      <activity android:configChanges="orientation|keyboardHidden" android:name="com.tencent.connect.common.AssistActivity" android:screenOrientation="behind" android:theme="@android:style/Theme.Translucent.NoTitleBar">
+      </activity>
       <activity android:name="com.sina.weibo.sdk.component.WeiboSdkBrowser" android:configChanges="keyboardHidden|orientation" android:windowSoftInputMode="adjustResize" android:exported="false" >
       </activity>
     </config-file>
