@@ -26,8 +26,10 @@ import com.sina.weibo.sdk.api.WebpageObject;
 import com.sina.weibo.sdk.api.WeiboMessage;
 import com.sina.weibo.sdk.api.WeiboMultiMessage;
 import com.sina.weibo.sdk.api.share.BaseResponse;
+import com.sina.weibo.sdk.api.share.IWeiboHandler;
 import com.sina.weibo.sdk.api.share.IWeiboShareAPI;
 import com.sina.weibo.sdk.api.share.SendMessageToWeiboRequest;
+import com.sina.weibo.sdk.api.share.SendMessageToWeiboResponse;
 import com.sina.weibo.sdk.api.share.WeiboShareSDK;
 import com.sina.weibo.sdk.auth.AuthInfo;
 import com.sina.weibo.sdk.auth.Oauth2AccessToken;
@@ -35,6 +37,7 @@ import com.sina.weibo.sdk.auth.WeiboAuthListener;
 import com.sina.weibo.sdk.auth.sso.SsoHandler;
 import com.sina.weibo.sdk.constant.WBConstants;
 import com.sina.weibo.sdk.exception.WeiboException;
+import com.sina.weibo.sdk.utils.LogUtil;
 import com.tencent.connect.share.QQShare;
 import com.tencent.mm.sdk.constants.ConstantsAPI;
 import com.tencent.mm.sdk.modelbase.BaseReq;
@@ -72,7 +75,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
-public class SocialSharing extends CordovaPlugin{
+public class SocialSharing extends CordovaPlugin implements IWeiboHandler.Response{
 
   private static final String ACTION_AVAILABLE_EVENT = "available";
   private static final String ACTION_SHARE_EVENT = "share";
@@ -89,6 +92,8 @@ public class SocialSharing extends CordovaPlugin{
 
   private static final String ACTION_SHARE_VIA_WECHAT_EVENT = "shareViaWechat";
   private static final String ACTION_SHARE_VIA_QQ_EVENT = "shareViaQq";
+  private static final String ACTION_SHARE_VIA_WEI_BO="shareViaWeiBo";
+
   private static final String WXAPPID_PROPERTY_KEY = "wechatappid";
   private static final String QQAPPID_PROPERTY_KEY = "qqappid";
   private static final String WEIBOAPPID_PROPERTY_KEY ="weiboappid";
@@ -184,6 +189,8 @@ public class SocialSharing extends CordovaPlugin{
       return shareViaQq(callbackContext,args.getString(0), args.getString(1), args.isNull(2)?null:args.getJSONArray(2), args.isNull(3)?null:args.getString(3),args.isNull(4)?null:args.getString(4));
     } else if(ACTION_SHARE_VIA_WECHAT_EVENT.equals(action)){
       return shareViaWechat(callbackContext,args.getString(0), args.getString(1), args.isNull(2)?null:args.getJSONArray(2), args.isNull(3)?null:args.getString(3),args.isNull(4)?null:args.getString(4));
+    } else if(ACTION_SHARE_VIA_WEI_BO.equals(action)){
+      return shareViaWeiBo(callbackContext,args.getString(0),args.getString(1),args.isNull(2)?null:args.getJSONArray(2), args.isNull(3)?null:args.getString(3));
     } else {
       callbackContext.error("socialSharing." + action + " is not a supported function. Did you mean '" + ACTION_SHARE_EVENT + "'?");
       return false;
@@ -862,85 +869,67 @@ public class SocialSharing extends CordovaPlugin{
   }
 
   private boolean shareViaWeiBo(final CallbackContext callbackContext,final String message, final String subject, final JSONArray files, final String url){
-    if(WEIBO_APP_ID.isEmpty() || weiboShareAPI == null) {
-      callbackContext.error("weibo app key is not set!");
-      return false;
-    }
-    if(!weiboShareAPI.isWeiboAppInstalled() || !weiboShareAPI.isWeiboAppSupportAPI()) {
-      callbackContext.error("Please update your weibo app.");
-      return false;
-    }
-    WeiboMessage wbMsg = new WeiboMessage();
-    if(!url.isEmpty()){
-      WebpageObject webObj=new WebpageObject();
-      webObj.actionUrl=url;
-      webObj.description=message;
-      webObj.title=subject;
-      webObj.identify=String.valueOf(System.currentTimeMillis());
-      if(files.length()>0){
-        try{
-          String img_url=files.getString(0);
-          Bitmap image=get_bitmap_from_url(img_url);
-          webObj.thumbData=bitmapToThumb(image,50,50);
-        }catch (Exception e){
+    final CordovaPlugin sharePlugin=this;
+    cordova.getThreadPool().execute(new Runnable() {
+      public void run() {
+        if(WEIBO_APP_ID.isEmpty() || weiboShareAPI == null) {
+          callbackContext.error("weibo app key is not set!");
+          return;
+        }
+        if(!weiboShareAPI.isWeiboAppInstalled() || !weiboShareAPI.isWeiboAppSupportAPI()) {
+          callbackContext.error("Please update your weibo app.");
+          return;
+        }
+        WeiboMessage wbMsg = new WeiboMessage();
+        if(!url.isEmpty()){
+          WebpageObject webObj=new WebpageObject();
+          webObj.actionUrl=url;
+          webObj.description=message;
+          webObj.title=subject;
+          webObj.identify=String.valueOf(System.currentTimeMillis());
+          if(files.length()>0){
+            try{
+              String img_url=files.getString(0);
+              Bitmap image=get_bitmap_from_url(img_url);
+              webObj.thumbData=bitmapToThumb(image,50,50);
+            }catch (Exception e){
 
+            }
+          }
+          wbMsg.mediaObject=webObj;
+        }else if(files.length()>0){
+          ImageObject imgObj= new ImageObject();
+          try{
+            String img_url=files.getString(0);
+            Bitmap image=get_bitmap_from_url(img_url);
+            imgObj.imageData=bitmapToThumb(image,image.getWidth(),image.getHeight());
+            imgObj.thumbData=bitmapToThumb(image,50,50);
+            imgObj.description=message;
+            imgObj.title=subject;
+            imgObj.identify=String.valueOf(System.currentTimeMillis());
+            wbMsg.mediaObject=imgObj;
+          }catch (Exception e){
+            TextObject txObj=new TextObject();
+            txObj.text=message;
+            txObj.identify=String.valueOf(System.currentTimeMillis());
+            wbMsg.mediaObject=txObj;
+          }
+        }else{
+          TextObject txObj=new TextObject();
+          txObj.text=message;
+          txObj.identify=String.valueOf(System.currentTimeMillis());
+          wbMsg.mediaObject=txObj;
+        }
+        SendMessageToWeiboRequest request=new SendMessageToWeiboRequest();
+        request.message=wbMsg;
+        request.transaction=String.valueOf(System.currentTimeMillis());
+        AuthInfo authInfo=new AuthInfo(cordova.getActivity().getApplicationContext(),WEIBO_APP_ID,WEIBO_URL,"all");
+        if(!weiboShareAPI.sendRequest(cordova.getActivity(),request,authInfo,weibo_token,new AuthListener())){
+          callbackContext.error("error when sending request to weibo app");
         }
       }
-      wbMsg.mediaObject=webObj;
-    }else if(files.length()>0){
-      ImageObject imgObj= new ImageObject();
-      try{
-        String img_url=files.getString(0);
-        Bitmap image=get_bitmap_from_url(img_url);
-        imgObj.imageData=bitmapToThumb(image,image.getWidth(),image.getHeight());
-        imgObj.thumbData=bitmapToThumb(image,50,50);
-        imgObj.description=message;
-        imgObj.title=subject;
-        imgObj.identify=String.valueOf(System.currentTimeMillis());
-        wbMsg.mediaObject=imgObj;
-      }catch (Exception e){
-        TextObject txObj=new TextObject();
-        txObj.text=message;
-        txObj.identify=String.valueOf(System.currentTimeMillis());
-        wbMsg.mediaObject=txObj;
-      }
-    }else{
-      TextObject txObj=new TextObject();
-      txObj.text=message;
-      txObj.identify=String.valueOf(System.currentTimeMillis());
-      wbMsg.mediaObject=txObj;
-    }
-    SendMessageToWeiboRequest request=new SendMessageToWeiboRequest();
-    request.message=wbMsg;
-    request.transaction=String.valueOf(System.currentTimeMillis());
-    AuthInfo authInfo=new AuthInfo(cordova.getActivity().getApplicationContext(),WEIBO_APP_ID,WEIBO_URL,"all");
-    cordova.setActivityResultCallback(this);
-    WeiboReceiver mWeiboReceive = new WeiboReceiver(){
-      @Override
-      public void onReceive(Context context, Intent intent) {
-        if(weiboShareAPI !=null){
-          weiboShareAPI.handleWeiboResponse(intent,this);
-        }
-        cordova.getActivity().unregisterReceiver(this);
-      }
+    });
 
-      @Override
-      public void onResponse(BaseResponse baseResponse) {
-        switch (baseResponse.errCode) {
-          case WBConstants.ErrorCode.ERR_OK:
-            callbackContext.success();
-            break;
-          default:
-            callbackContext.error(baseResponse.errMsg);
-        }
-      }
-    };
-    IntentFilter intentFilter=new IntentFilter();
-    intentFilter.addAction("com.sina.weibo.sdk.action.ACTION_SDK_REQ_ACTIVITY");
-    cordova.getActivity().registerReceiver(mWeiboReceive,intentFilter);
-    if(!weiboShareAPI.sendRequest(cordova.getActivity(),request,authInfo,weibo_token,new AuthListener())){
-      callbackContext.error("error when sending request to weibo app");
-    }
     return true;
   }
 
@@ -971,5 +960,34 @@ public class SocialSharing extends CordovaPlugin{
     }
   }
 
+  /**
+   * Called when the activity receives a new intent.
+   *
+   * @param intent
+   */
+  @Override
+  public void onNewIntent(Intent intent) {
+    super.onNewIntent(intent);
+    if(intent.getAction().equals(WBConstants.ACTIVITY_REQ_SDK)){
+      String appPackage = intent.getStringExtra("_weibo_appPackage");
+      String transaction = intent.getStringExtra("_weibo_transaction");
+      if(TextUtils.isEmpty(transaction)) {
+        LogUtil.e("SocialSharing", "handleWeiboResponse faild intent _weibo_transaction is null");
+      }else{
+        SendMessageToWeiboResponse data = new SendMessageToWeiboResponse(intent.getExtras());
+        this.onResponse(data);
+      }
+    }
+  }
 
+  @Override
+  public void onResponse(BaseResponse baseResponse) {
+    if(baseResponse.errCode==WBConstants.ErrorCode.ERR_OK){
+      _callbackContext.success("成功分享微博");
+    }else if(baseResponse.errCode==WBConstants.ErrorCode.ERR_FAIL){
+      _callbackContext.error("分享错误");
+    } else{
+      _callbackContext.error("分享被取消");
+    }
+  }
 }

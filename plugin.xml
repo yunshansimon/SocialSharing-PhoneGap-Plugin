@@ -189,6 +189,13 @@
       </activity>
     </config-file>
 
+    <config-file target="AndroidManifest.xml" parent="/manifest/application/activity[@android:name='MainActivity']">
+      <intent-filter>
+        <action android:name="com.sina.weibo.sdk.action.ACTION_SDK_REQ_ACTIVITY" />
+        <category android:name="android.intent.category.DEFAULT" />
+      </intent-filter>
+    </config-file>
+
     <source-file src="src/android/nl/xservices/plugins/SocialSharing.java" target-dir="src/nl/xservices/plugins"/>
     <source-file src="src/android/nl/xservices/plugins/TencentMMReceiver.java" target-dir="src/nl/xservices/plugins"/>
     <source-file src="src/android/tencent/libammsdk.jar" target-dir="src/tencent"/>
