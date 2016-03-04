@@ -103,7 +103,7 @@ SocialSharing.prototype.WECHAT_SENSE={
 };
 
 SocialSharing.prototype.shareViaWeiBo=function (message, subject, fileOrFileArray, url, successCallback, errorCallback){
-  cordova.exec(successCallback, this._getErrorCallback(errorCallback, "shareViaWeiBo"), "SocialSharing", "shareViaWeiBo", [message, subject, this._asArray(fileOrFileArray), url]);
+  cordova.exec(successCallback, this._getErrorCallback(errorCallback, "shareViaWeiBo"), "SocialSharing", "shareViaWeiBo", [message.substr(0,130), subject.substr(0,10), this._asArray(fileOrFileArray), url]);
 };
 
 SocialSharing.prototype._asArray = function (param) {

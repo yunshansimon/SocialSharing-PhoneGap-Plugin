@@ -54,6 +54,11 @@
         <string>wechat</string>
         <string>mqq</string>
         <string>mqqopensdkapiV2</string>
+        <string>mqqapi</string>
+        <string>weibosdk</string>
+        <string>weibosdk2.5</string>
+        <string>sinaweibo</string>
+        <string>sinaweibohd</string>
       </array>
     </config-file>
 
