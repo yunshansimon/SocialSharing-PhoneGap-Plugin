@@ -937,16 +937,10 @@
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
         return;
     }
-    if(!_weibo_access_token){
-        
-        WBAuthorizeRequest *authorReq= [WBAuthorizeRequest request];
-        authorReq.scope=@"all";
-        authorReq.redirectURI=weiboRedirectURI;
-        authorReq.shouldShowWebViewForAuthIfCannotSSO=true;
-        authorReq.userInfo=@{@"message":message,@"subject":subject,@"img_url":urlImage,@"url":share_url,@"callbackId":command.callbackId};
-        [WeiboSDK sendRequest:authorReq];
-        return;
-    }
+    WBAuthorizeRequest *authorReq= [WBAuthorizeRequest request];
+    authorReq.scope=@"all";
+    authorReq.redirectURI=weiboRedirectURI;
+    authorReq.shouldShowWebViewForAuthIfCannotSSO=true;
     WBMessageObject *msg=[WBMessageObject message];
     msg.text=message?message:subject;
     if([share_url isEqualToString:@""] && ![urlImage isEqualToString:@""]){
@@ -1039,16 +1033,6 @@
     if ([response isKindOfClass:WBAuthorizeResponse.class]) {
         WBAuthorizeResponse *res=(WBAuthorizeResponse *)response;
         _weibo_access_token=res.accessToken;
-        if(res.requestUserInfo){
-            NSString *message=[res.requestUserInfo valueForKey:@"message"];
-            NSString *subject=[res.requestUserInfo valueForKey:@"subject"];
-            NSArray *filenames=[NSArray arrayWithObjects:[res.requestUserInfo valueForKey:@"img_url"], nil];
-            NSString *share_url=[res.requestUserInfo valueForKey:@"url"];
-            NSString *callbackId=[res.requestUserInfo valueForKey:@"callbackId"];
-            CDVInvokedUrlCommand *command=[[CDVInvokedUrlCommand alloc] initWithArguments:[NSArray arrayWithObjects:message,subject,filenames,share_url, nil] callbackId:callbackId
-  className:@"SocialSharing" methodName:@"shareViaWeibo"];
-            [self shareViaWeiBo:command];
-        }
     }else if([response isKindOfClass:WBSendMessageToWeiboResponse.class]){
         WBSendMessageToWeiboResponse *res=(WBSendMessageToWeiboResponse *)response;
         if (res.requestUserInfo) {
