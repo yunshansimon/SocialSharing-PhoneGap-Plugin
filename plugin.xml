@@ -22,10 +22,6 @@
 
   <issue>https://github.com/yunshansimon/SocialSharing-PhoneGap-Plugin/issues</issue>
 
-  <preference name="WECHATAPPID" default="wxba84c1a4c6c8fee0"/>
-  <preference name="QQAPPID" default="1105039864"/>
-  <preference name="WEIBOAPPID" default="4282630408"/>
-  <preference name="WEIBORedirectURI" default="https://api.weibo.com/oauth2/default.html"/>
 
   <engines>
     <engine name="cordova" version=">=3.0.0"/>
@@ -34,7 +30,10 @@
   <js-module src="www/SocialSharing.js" name="SocialSharing">
     <clobbers target="window.plugins.socialsharing" />
   </js-module>
-
+  <preference name="WECHATAPPID" default="wx49f2fdcdac98ba63" />
+  <preference name="QQAPPID" default="1105039864" />
+  <preference name="WEIBOAPPID" default="514499654" />
+  <preference name="WEIBORedirectURI" default="https://api.weibo.com/oauth2/default.html" />
   <!-- ios -->
   <platform name="ios">
     <config-file target="config.xml" parent="/*">
@@ -42,10 +41,6 @@
         <param name="ios-package" value="SocialSharing"/>
         <param name="onload" value="true" />
       </feature>
-      <preference name="WECHATAPPID" value="$WECHATAPPID"/>
-      <preference name="QQAPPID" value="$QQAPPID"/>
-      <preference name="WEIBOAPPID" value="$WEIBOAPPID"/>
-      <preference name="WEIBORedirectURI" value="$WEIBORedirectURI"/>
     </config-file>
 
     <config-file target="*-Info.plist" parent="LSApplicationQueriesSchemes">
@@ -85,7 +80,7 @@
           <string>tencent</string>
           <key>CFBundleURLSchemes</key>
           <array>
-            <string>tencent$WECHATAPPID</string>
+            <string>tencent$QQAPPID</string>
           </array>
         </dict>
         <dict>
@@ -164,10 +159,6 @@
       <feature name="SocialSharing">
         <param name="android-package" value="nl.xservices.plugins.SocialSharing" />
       </feature>
-      <preference name="WECHATAPPID" value="$WECHATAPPID"/>
-      <preference name="QQAPPID" value="$QQAPPID"/>
-      <preference name="WEIBOAPPID" value="$WEIBOAPPID"/>
-      <preference name="WEIBORedirectURI" value="$WEIBORedirectURI"/>
     </config-file>
 
     <config-file target="AndroidManifest.xml" parent="/*">
@@ -227,7 +218,7 @@
     <source-file src="src/wp8/SocialSharing.cs" />
     <source-file src="src/wp8/SocialSharingSDK/Newtonsoft.Json.dll" />
   </platform>
-  
+
   <!-- windows -->
   <platform name="windows">
     <js-module src="src/windows/SocialSharingProxy.js" name="SocialSharingProxy">
