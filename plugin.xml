@@ -204,7 +204,9 @@
     <source-file src="src/android/weibo/mips64/libweibosdkcore.so" target-dir="libs/mips64"/>
     <source-file src="src/android/weibo/x86/libweibosdkcore.so" target-dir="libs/x86"/>
     <source-file src="src/android/weibo/x86_64/libweibosdkcore.so" target-dir="libs/x86_64"/>
-
+    <framework src="src/android/weibo/weibosdkcore_release.jar" custom="true" />
+    <framework src="src/android/tencent/open_sdk_r5509_lite.jar" custom="true" />
+    <framework src="src/android/tencent/libammsdk.jar" custom="true" />
   </platform>
 
   <!-- wp8 -->
