@@ -30,9 +30,9 @@
   <js-module src="www/SocialSharing.js" name="SocialSharing">
     <clobbers target="window.plugins.socialsharing" />
   </js-module>
-  <preference name="WECHATAPPID" default="wx49f2fdcdac98ba63" />
-  <preference name="QQAPPID" default="1105039864" />
-  <preference name="WEIBOAPPID" default="514499654" />
+  <preference name="WECHATAPPID" default="YOUR CODE" />
+  <preference name="QQAPPID" default="YOUR CODE" />
+  <preference name="WEIBOAPPID" default="YOUR CODE" />
   <preference name="WEIBORedirectURI" default="https://api.weibo.com/oauth2/default.html" />
   <!-- ios -->
   <platform name="ios">
