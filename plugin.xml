@@ -194,6 +194,9 @@
 
     <source-file src="src/android/nl/xservices/plugins/SocialSharing.java" target-dir="src/nl/xservices/plugins"/>
     <source-file src="src/android/nl/xservices/plugins/TencentMMReceiver.java" target-dir="src/nl/xservices/plugins"/>
+    <source-file src="src/android/tencent/libammsdk.jar" target-dir="src/tencent"/>
+    <source-file src="src/android/tencent/open_sdk_r5509_lite.jar" target-dir="src/tencent"/>
+    <source-file src="src/android/weibo/weibosdkcore_release.jar" target-dir="src/weibo"/>
     <source-file src="src/android/weibo/arm64-v8a/libweibosdkcore.so" target-dir="libs/arm64-v8a"/>
     <source-file src="src/android/weibo/armeabi/libweibosdkcore.so" target-dir="libs/armeabi"/>
     <source-file src="src/android/weibo/armeabi-v7a/libweibosdkcore.so" target-dir="libs/armeabi-v7a"/>
@@ -201,9 +204,6 @@
     <source-file src="src/android/weibo/mips64/libweibosdkcore.so" target-dir="libs/mips64"/>
     <source-file src="src/android/weibo/x86/libweibosdkcore.so" target-dir="libs/x86"/>
     <source-file src="src/android/weibo/x86_64/libweibosdkcore.so" target-dir="libs/x86_64"/>
-    <framework src="src/android/weibo/weibosdkcore_release.jar" />
-    <framework src="src/android/tencent/open_sdk_r5509_lite.jar" />
-    <framework src="src/android/tencent/libammsdk.jar"  />
   </platform>
 
   <!-- wp8 -->
